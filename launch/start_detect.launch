@@ -1,0 +1,16 @@
+<launch>
+    <!--- Run Rviz-->
+    <!-- <node pkg="rviz" type="rviz" name="rviz" args="-d $(find target_detect)/config/show_result01.rviz" /> -->
+
+    <!-- Parameters -->
+    <!-- <rosparam file = "$(find lili_om)/config/config_fr_iosb.yaml"/> -->
+
+    <!-- <node pkg="tf" type="static_transform_publisher" name="lili_om" args="0 0 0 0 0 0 base_link lili_om 50"/> -->
+
+    <node pkg="rs_yolo" type="rstest1.py" name="rstest1" output="screen"/>
+
+    <node pkg="rs_yolo" type="sub.py" name="sub" output="screen"/>
+
+    <!-- <node pkg="rs_yolo" type="detect_mileage.py" name="detect_mileage" output="screen"/> -->
+
+</launch>
