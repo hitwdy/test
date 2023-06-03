@@ -9,7 +9,7 @@
 
     <node pkg="rs_yolo" type="rstest1.py" name="rstest1" output="screen"/>
 
-    <node pkg="rs_yolo" type="sub.py" name="sub" output="screen"/>
+    <!-- <node pkg="rs_yolo" type="sub.py" name="sub" output="screen"/> -->
 
     <!-- <node pkg="rs_yolo" type="detect_mileage.py" name="detect_mileage" output="screen"/> -->
 

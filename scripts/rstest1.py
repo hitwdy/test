@@ -190,7 +190,8 @@ class YoloV5:
                 xyxy_list.append(xyxy)
                 conf_list.append(conf)
                 class_id_list.append(class_id)
-                if view_img:
+                if view_img and class_id==0 and conf > 0.8:
+                # if view_img:
                     # print("find obj",class_id)
                     # 绘制矩形框与标签
                     label = '%s %.2f' % (
@@ -215,12 +216,12 @@ class YoloV5:
                         [225, 255, 255], thickness=tf, lineType=cv2.LINE_AA)
 
 
-def publish_image(x_min, y_min, x_max, y_max,seq):
+def publish_image(x_min, y_min, x_max, y_max,box_header):
     detect_result=bbox()
-    
-    detect_result.header.stamp = rospy.Time.now() 
-    detect_result.header.seq = seq 
-    detect_result.header.frame_id = 'mileage' 
+    detect_result.header = box_header
+    # detect_result.header.stamp = rospy.Time.now() 
+    # detect_result.header.seq = seq 
+    # detect_result.header.frame_id = 'mileage' 
     detect_result.bbox[0] = float(x_min)
     detect_result.bbox[1] = float(y_min)
     detect_result.bbox[2] = float(x_max)
@@ -228,21 +229,27 @@ def publish_image(x_min, y_min, x_max, y_max,seq):
 
     pub.publish(detect_result)
 
-    rospy.loginfo("x_min:%.3f,  y_min:%.3f", detect_result.bbox[0], detect_result.bbox[1])
+    rospy.loginfo("发送数据:x_min:%.3f,  y_min:%.3f", detect_result.bbox[0], detect_result.bbox[1])
+    print(detect_result.header)
 
 def doMsg(msg):
     global count 
+    Header = msg.header
+    # print('header:',Header)
     # print("收到图像信息")
-    t_start = time.time()  # 开始计时
+    t_start = time.time()  # 开始计时,单位s
     bridge = CvBridge()
     cvImage = bridge.imgmsg_to_cv2(msg, "bgr8")
     canvas, class_id_list, xyxy_list, conf_list = model.detect(cvImage)
     t_end = time.time()  # 计时
 
     for i in range(len(xyxy_list)):
-        if model.yolov5['class_name'][class_id_list[i]] == 'mileage':
+        if model.yolov5['class_name'][class_id_list[i]] == 'mileage' and conf_list[i] > 0.8:
             count = count+1
-            publish_image(xyxy_list[i][0], xyxy_list[i][1], xyxy_list[i][2],xyxy_list[i][3],count)
+            t_nsec = int((t_end - t_start)*10**9)
+            # Header.stamp.nsecs = Header.stamp.nsecs + t_nsec
+            Header.seq = count
+            publish_image(xyxy_list[i][0], xyxy_list[i][1], xyxy_list[i][2],xyxy_list[i][3],Header)
 
     # 添加fps显示
     fps = int(1.0 / (t_end - t_start))
@@ -253,14 +260,16 @@ def doMsg(msg):
                     cv2.WINDOW_KEEPRATIO | cv2.WINDOW_GUI_EXPANDED)
     cv2.imshow('detection', canvas)
     key = cv2.waitKey(1)
-    # Press esc or 'q' to close the image window
-    if key & 0xFF == ord('q') or key == 27:
-        cv2.destroyAllWindows()
+    # # Press esc or 'q' to close the image window
+    # if key & 0xFF == ord('q') or key == 27:
+    #     cv2.destroyAllWindows()
+    print("process time:",t_end-t_start)
 
 if __name__ == "__main__":
     rospy.init_node('ros_yolo')
     pub = rospy.Publisher("/detect_result_out", bbox, queue_size=10)
     sub = rospy.Subscriber("/camera/color/image_raw",Image,doMsg,queue_size=10)
+    # sub = rospy.Subscriber("/zed2/zed_node/right/image_rect_color",Image,doMsg,queue_size=10)
     print("[INFO] YoloV5目标检测-程序启动")
     print("[INFO] 开始YoloV5模型加载")
     # !!YOLOV5模型配置文件(YAML格式)的路径 yolov5_yaml_path
